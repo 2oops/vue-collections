@@ -364,6 +364,7 @@ function normalizeDirectives (options: Object) {
   if (dirs) {
     for (const key in dirs) {
       const def = dirs[key]
+      // 当发现你注册的指令是一个函数的时候，则将该函数作为对象形式的 bind 属性和 update 属性的值
       if (typeof def === 'function') {
         dirs[key] = { bind: def, update: def }
       }
@@ -394,6 +395,7 @@ export function mergeOptions (
     checkComponents(child)
   }
 
+  // 通过 Vue.extend 创造出来的子类也具有options这个属性，这也就允许了合并Vue实例构造者的选项
   if (typeof child === 'function') {
     child = child.options
   }
@@ -407,6 +409,7 @@ export function mergeOptions (
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
   if (!child._base) {
+    // 处理 extends 选项和 mixins 选项的，以下的mergeOptions 函数将会产生一个新的对象
     if (child.extends) {
       parent = mergeOptions(parent, child.extends, vm)
     }

@@ -13,6 +13,13 @@ function Vue (options) {
     warn('Vue is a constructor and should be called with the `new` keyword')
   }
   this._init(options) // _init方法定义在Vue.prototype上
+  // var vm = new Vue({
+  //   el: '#app',
+  //   data() {
+  //     test: 1
+  //   }
+  // })
+  // 这里的options即是new Vue({})传参过来的对象
 }
 
 // 将Vue作为参数传递给导入的5个方法
