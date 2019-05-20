@@ -32,8 +32,8 @@ extend(Vue.options.components, platformComponents)
 
 // 执行完以上两句代码后Vue.options = {
 // 	components: {
-// 		KeepAlive,
-// 		Transition,
+// 		KeepAlive,//对应<keep-alive/>组件
+// 		Transition,//对应<transition/>组件
 // 		TransitionGroup
 // 	},
 // 	directives: {

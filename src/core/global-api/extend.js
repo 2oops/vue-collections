@@ -36,6 +36,7 @@ export function initExtend (Vue: GlobalAPI) {
     Sub.prototype = Object.create(Super.prototype)
     Sub.prototype.constructor = Sub
     Sub.cid = cid++
+    // 通过 Vue.extend 创建子类的时候 mergeOptions 会被调用，此时策略函数strats就拿不到第三个参数
     Sub.options = mergeOptions(
       Super.options,
       extendOptions
