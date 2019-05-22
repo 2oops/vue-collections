@@ -52,7 +52,7 @@ const patternTypes: Array<Function> = [String, RegExp, Array]
 
 export default {
   name: 'keep-alive',
-  abstract: true,
+  abstract: true,// 抽象组件，不渲染真实DOM，也不会出现在父子关系的路径
 
   props: {
     include: patternTypes,

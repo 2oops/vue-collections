@@ -18,7 +18,7 @@ import {
   invokeWithErrorHandling
 } from '../util/index'
 
-export let activeInstance: any = null
+export let activeInstance: any = null// 实现自动侦测父级，总是保存着当前正在渲染的实例的引用
 export let isUpdatingChildComponent: boolean = false
 
 export function setActiveInstance(vm: Component) {
@@ -33,6 +33,7 @@ export function initLifecycle (vm: Component) {
   const options = vm.$options
 
   // locate first non-abstract parent
+  // 将当前实例添加到父实例的 $children 属性里，并设置当前实例的 $parent 指向父实例
   let parent = options.parent
   if (parent && !options.abstract) {
     while (parent.$options.abstract && parent.$parent) {
