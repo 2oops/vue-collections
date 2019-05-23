@@ -1,4 +1,6 @@
 /* @flow */
+// __ob__ 属性以及 __ob__.dep 的主要作用是为了添加、删除属性时有能力触发依赖，
+// 而这就是 Vue.set 或 Vue.delete 的原理
 
 import Dep from './dep'
 import VNode from '../vdom/vnode'
@@ -41,9 +43,12 @@ export class Observer {
 
   constructor (value: any) {
     this.value = value
-    this.dep = new Dep()
+    this.dep = new Dep()// Dep收集依赖的“筐”
     this.vmCount = 0
-    def(value, '__ob__', this)
+    def(value, '__ob__', this)// def 函数其实就是 Object.defineProperty 函数的简单封装
+    // 使用 def 函数，为数据对象定义了一个 __ob__ 属性
+    // 使用 def 函数定义 __ob__ 属性是因为这样可以定义不可枚举的属性，
+    // 这样后面遍历数据对象的时候就能够防止遍历到 __ob__ 属性。
     if (Array.isArray(value)) {
       if (hasProto) {
         protoAugment(value, arrayMethods)
@@ -118,7 +123,8 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     shouldObserve &&
     !isServerRendering() &&
     (Array.isArray(value) || isPlainObject(value)) &&
-    Object.isExtensible(value) &&
+    Object.isExtensible(value) &&// 保证对象可扩展（默认），以下三个方法都可以使得一个对象变得不可扩展：
+    //Object.preventExtensions()、Object.freeze() 以及 Object.seal()
     !value._isVue
   ) {
     ob = new Observer(value)
@@ -132,7 +138,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 /**
  * Define a reactive property on an Object.
  */
-export function defineReactive (
+export function defineReactive (// 讲数据对象的数据属性转换为访问器属性
   obj: Object,
   key: string,
   val: any,
@@ -173,6 +179,7 @@ export function defineReactive (
     set: function reactiveSetter (newVal) {
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
+      // value !== value 值与自身不等的情况：NaN
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
