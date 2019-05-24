@@ -1,4 +1,7 @@
 /* @flow */
+// Vue 数据响应系统的原理的核心是通过 Object.defineProperty 函数将数据对象的属性转换为访问器属性，
+// 从而使得我们能够拦截到属性的读取和设置
+
 // __ob__ 属性以及 __ob__.dep 的主要作用是为了添加、删除属性时有能力触发依赖，
 // 而这就是 Vue.set 或 Vue.delete 的原理
 
@@ -18,6 +21,7 @@ import {
   isServerRendering
 } from '../util/index'
 
+// 以下这种直接在数组实例上定义的属性是可枚举的，更好的做法是使用 Object.defineProperty
 const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
 
 /**
@@ -50,7 +54,7 @@ export class Observer {
     // 使用 def 函数定义 __ob__ 属性是因为这样可以定义不可枚举的属性，
     // 这样后面遍历数据对象的时候就能够防止遍历到 __ob__ 属性。
     if (Array.isArray(value)) {
-      if (hasProto) {
+      if (hasProto) {// hasProto 是一个布尔值，它用来检测当前环境是否可以使用 __proto__ 属性
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
@@ -76,6 +80,7 @@ export class Observer {
   /**
    * Observe a list of Array items.
    */
+  // 递归的观测那些类型为数组或对象的数组元素
   observeArray (items: Array<any>) {
     for (let i = 0, l = items.length; i < l; i++) {
       observe(items[i])
@@ -100,6 +105,9 @@ function protoAugment (target, src: Object) {
  * hidden properties.
  */
 /* istanbul ignore next */
+function protoAugment (target, src: Object) {
+// protoAugment和copyAugment都是为了把数组实例与代理原型或与代理原型中定义的函数联系起来，
+// 从而拦截数组变异方法
 function copyAugment (target: Object, src: Object, keys: Array<string>) {
   for (let i = 0, l = keys.length; i < l; i++) {
     const key = keys[i]
@@ -155,10 +163,11 @@ export function defineReactive (// 讲数据对象的数据属性转换为访问
   // cater for pre-defined getter/setters
   const getter = property && property.get
   const setter = property && property.set
+  // 解决定义响应式数据时行为不一致的问题，所以会有三个判断条件
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key]
   }
-
+  // 当 Vue 发现该属性拥有原本的 getter 时，是不会深度观测的，也就是val为undefined时
   let childOb = !shallow && observe(val)
   Object.defineProperty(obj, key, {
     enumerable: true,
@@ -170,12 +179,20 @@ export function defineReactive (// 讲数据对象的数据属性转换为访问
         if (childOb) {
           childOb.dep.depend()
           if (Array.isArray(value)) {
-            dependArray(value)
+            dependArray(value)// 为什么数组需要这样处理，而纯对象不需要呢？那是因为 数组的索引是非响应式的
           }
         }
       }
       return value
     },
+    // const ins = new Vue({
+    //   data: {
+    //     arr: [1, 2]
+    //   }
+    // })
+    
+    // ins.$data.arr[0] = 3 // 不能触发响应
+    // ins.$set(ins.$data.arr, 0, 3) // 能够触发响应
     set: function reactiveSetter (newVal) {
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
@@ -233,7 +250,7 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     return val
   }
   defineReactive(ob.value, key, val)
-  ob.dep.notify()
+  ob.dep.notify()// __ob__.dep 中收集了所有该对象(或数组)的依赖(观察者)
   return val
 }
 
@@ -263,9 +280,9 @@ export function del (target: Array<any> | Object, key: any) {
   }
   delete target[key]
   if (!ob) {
-    return
+    return// 判断 ob 对象是否存在，如果不存在说明 target 对象原本就不是响应的
   }
-  ob.dep.notify()
+  ob.dep.notify()// 如果 ob 对象存在，说明 target 对象是响应的，需要触发响应才行，即执行 ob.dep.notify()
 }
 
 /**
