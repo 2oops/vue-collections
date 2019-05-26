@@ -139,13 +139,14 @@ export function lifecycleMixin (Vue: Class<Component>) {
   }
 }
 
-export function mountComponent (
-  vm: Component,
-  el: ?Element,
+export function mountComponent (// 实现挂载组件的功能
+  vm: Component,// 组件实例
+  el: ?Element,// 挂载元素
   hydrating?: boolean
 ): Component {
-  vm.$el = el
-  if (!vm.$options.render) {
+  vm.$el = el// $el 的值是组件模板根元素的引用
+  // 暂时赋值而已，这是为了给虚拟DOM的 patch 算法使用的
+  if (!vm.$options.render) {// 渲染函数不存在
     vm.$options.render = createEmptyVNode
     if (process.env.NODE_ENV !== 'production') {
       /* istanbul ignore if */
@@ -188,6 +189,8 @@ export function mountComponent (
     }
   } else {
     updateComponent = () => {
+      // vm._render 函数的作用是调用 vm.$options.render 函数并返回生成的虚拟节点(vnode)
+      // vm._update 函数的作用是把 vm._render 函数生成的虚拟节点渲染成真正的 DOM
       vm._update(vm._render(), hydrating)
     }
   }
