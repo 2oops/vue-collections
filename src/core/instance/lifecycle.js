@@ -188,7 +188,7 @@ export function mountComponent (// 实现挂载组件的功能
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
-    updateComponent = () => {
+    updateComponent = () => {// updateComponent函数的作用是把渲染函数生成的虚拟DOM渲染成真正的DOM
       // vm._render 函数的作用是调用 vm.$options.render 函数并返回生成的虚拟节点(vnode)
       // vm._update 函数的作用是把 vm._render 函数生成的虚拟节点渲染成真正的 DOM
       vm._update(vm._render(), hydrating)
@@ -198,13 +198,13 @@ export function mountComponent (// 实现挂载组件的功能
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
-  new Watcher(vm, updateComponent, noop, {
+  new Watcher(vm, updateComponent, noop, {// 渲染函数的观察者
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
         callHook(vm, 'beforeUpdate')
       }
     }
-  }, true /* isRenderWatcher */)
+  }, true /* isRenderWatcher */)// true标识着该观察者实例对象是否是渲染函数的观察者
   hydrating = false
 
   // manually mounted instance, call mounted on self

@@ -50,38 +50,39 @@ export default class Watcher {
     isRenderWatcher?: boolean
   ) {
     this.vm = vm
-    if (isRenderWatcher) {
+    if (isRenderWatcher) {// 只有在 mountComponent 函数中创建渲染函数观察者时这个isRenderWatcher参数为真
       vm._watcher = this
     }
-    vm._watchers.push(this)
+    vm._watchers.push(this)// 渲染函数的观察者和非渲染函数的观察者，都会push进来
     // options
     if (options) {
       this.deep = !!options.deep
-      this.user = !!options.user
-      this.lazy = !!options.lazy
-      this.sync = !!options.sync
-      this.before = options.before
+      this.user = !!options.user// 标识当前观察者实例对象是 开发者定义的 还是 内部定义的
+      this.lazy = !!options.lazy// 原设计为computed
+      this.sync = !!options.sync// 告诉观察者当数据变化时是否同步求值并执行回调，默认不会
+      this.before = options.before// 以理解为 Watcher 实例的钩子,beforeUpdate
     } else {
       this.deep = this.user = this.lazy = this.sync = false
     }
     this.cb = cb
     this.id = ++uid // uid for batching
     this.active = true
-    this.dirty = this.lazy // for lazy watchers
+    this.dirty = this.lazy // for lazy watchers 计算属性是惰性求值 computed->lazy
     this.deps = []
     this.newDeps = []
     this.depIds = new Set()
     this.newDepIds = new Set()
     this.expression = process.env.NODE_ENV !== 'production'
       ? expOrFn.toString()
-      : ''
+      : ''// 生产环境下expression为空字符串
     // parse expression for getter
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     } else {
-      this.getter = parsePath(expOrFn)
+      this.getter = parsePath(expOrFn)// parsePath 返回的新函数将作为 this.getter 的值
       if (!this.getter) {
         this.getter = noop
+        // Watcher 只接受简单的点(.)分隔路径，如果你要用全部的 js 语法特性直接观察一个函数即可
         process.env.NODE_ENV !== 'production' && warn(
           `Failed watching path: "${expOrFn}" ` +
           'Watcher only accepts simple dot-delimited paths. ' +
@@ -90,7 +91,7 @@ export default class Watcher {
         )
       }
     }
-    this.value = this.lazy
+    this.value = this.lazy// 除lazy之外的所有观察者实例对象都将调用this.get()
       ? undefined
       : this.get()
   }
@@ -98,7 +99,7 @@ export default class Watcher {
   /**
    * Evaluate the getter, and re-collect dependencies.
    */
-  get () {
+  get () {// 正是因为对被观察目标的求值才得以触发数据属性的 get 拦截器函数
     pushTarget(this)
     let value
     const vm = this.vm
@@ -127,10 +128,11 @@ export default class Watcher {
    */
   addDep (dep: Dep) {
     const id = dep.id
-    if (!this.newDepIds.has(id)) {
-      this.newDepIds.add(id)
+    // 重新求值时不能用newDepIds的原因是 每一次求值之后 newDepIds 属性都会被清空，见cleanupDeps()
+    if (!this.newDepIds.has(id)) {// 无论一个数据属性被读取了多少次，对于同一个观察者它只会收集一次
+      this.newDepIds.add(id)// newDepIds 属性用来避免在 一次求值 的过程中收集重复的依赖
       this.newDeps.push(dep)
-      if (!this.depIds.has(id)) {
+      if (!this.depIds.has(id)) {// depIds 属性是用来在 多次求值 中避免收集重复依赖的
         dep.addSub(this)
       }
     }
