@@ -1,5 +1,6 @@
 /* @flow */
-
+// 异步更新队列：时修改很多属性的值，如果每次属性值的变化都要重新渲染，就会导致严重的性能问题，
+// 而异步更新队列就是用来解决这个问题
 import {
   warn,
   remove,
@@ -115,7 +116,7 @@ export default class Watcher {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
       if (this.deep) {
-        traverse(value)
+        traverse(value)// 深度监听
       }
       popTarget()
       this.cleanupDeps()
@@ -164,8 +165,16 @@ export default class Watcher {
    * Will be called when a dependency changes.
    */
   update () {
+    // computed: {
+    //   compA () {
+    //     return this.a +1
+    //   }
+    // }
+
+    // 计算属性 compA 依赖了数据对象的 a 属性，那么属性 a 将收集计算属性 compA 的 计算属性观察者对象，
+    // 而 计算属性观察者对象 将收集 渲染函数观察者对象
     /* istanbul ignore else */
-    if (this.lazy) {
+    if (this.lazy) {// 本质上计算属性观察者对象就是一个桥梁，它搭建在响应式数据与渲染函数观察者中间
       this.dirty = true
     } else if (this.sync) {
       this.run()
@@ -209,9 +218,12 @@ export default class Watcher {
    * Evaluate the value of the watcher.
    * This only gets called for lazy watchers.
    */
-  evaluate () {
+  evaluate () {// 评估，作用就是用来手动求值的
     this.value = this.get()
-    this.dirty = false
+    this.dirty = false// 实际上 this.dirty 属性也是为计算属性准备的，
+    // 由于计算属性是惰性求值，所以在实例化计算属性的时候 this.dirty 的值会被设置为 true，
+    // 代表着还没有求值，后面当真正对计算属性求值时，也就是执行如上代码时才会将 this.dirty 设置为 false，
+    // 代表着已经求过值了
   }
 
   /**
@@ -227,11 +239,12 @@ export default class Watcher {
   /**
    * Remove self from all dependencies' subscriber list.
    */
-  teardown () {
+  teardown () {// 拆除
     if (this.active) {
       // remove self from vm's watcher list
       // this is a somewhat expensive operation so we skip it
       // if the vm is being destroyed.
+      // 如果组件没有被销毁，那么将当前观察者实例从组件实例对象的 vm._watchers 数组中移除
       if (!this.vm._isBeingDestroyed) {
         remove(this.vm._watchers, this)
       }

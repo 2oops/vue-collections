@@ -8,7 +8,7 @@ import { isIE, isIOS, isNative } from './env'
 export let isUsingMicroTask = false
 
 const callbacks = []
-let pending = false
+let pending = false// 真假代表回调队列是否处于等待刷新的状态，初始值是 false 代表回调队列为空不需要等待刷新
 
 function flushCallbacks () {
   pending = false
@@ -39,6 +39,7 @@ let timerFunc
 // completely stops working after triggering a few times... so, if native
 // Promise is available, we will use it:
 /* istanbul ignore next, $flow-disable-line */
+// 检测当前宿主环境是否支持原生的 Promise
 if (typeof Promise !== 'undefined' && isNative(Promise)) {
   const p = Promise.resolve()
   timerFunc = () => {
@@ -50,7 +51,7 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
     // "force" the microtask queue to be flushed by adding an empty timer.
     if (isIOS) setTimeout(noop)
   }
-  isUsingMicroTask = true
+  isUsingMicroTask = true// 注册为微任务
 } else if (!isIE && typeof MutationObserver !== 'undefined' && (
   isNative(MutationObserver) ||
   // PhantomJS and iOS 7.x
@@ -75,6 +76,9 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
   // Techinically it leverages the (macro) task queue,
   // but it is still a better choice than setTimeout.
   timerFunc = () => {
+    // setImmediate 拥有比 setTimeout 更好的性能，这个问题很好理解，
+    // setTimeout 在将回调注册为 (macro)task 之前要不停的做超时检测，而 setImmediate 则不需要，
+    // 这就是优先选用 setImmediate 的原因
     setImmediate(flushCallbacks)
   }
 } else {
@@ -89,6 +93,8 @@ export function nextTick (cb?: Function, ctx?: Object) {
   callbacks.push(() => {
     if (cb) {
       try {
+        // 传递给 $nextTick 方法的回调函数的作用域就是当前组件实例对象，当然了前提是回调函数不能是箭头函数
+        // 不过在平时的使用中，回调函数使用箭头函数也没关系，只要能够达到你的目的即可
         cb.call(ctx)
       } catch (e) {
         handleError(e, ctx, 'nextTick')
@@ -98,12 +104,15 @@ export function nextTick (cb?: Function, ctx?: Object) {
     }
   })
   if (!pending) {
-    pending = true
+    pending = true// pending 的值设置为 true，代表着此时回调队列不为空，正在等待刷新
     timerFunc()
   }
   // $flow-disable-line
   if (!cb && typeof Promise !== 'undefined') {
     return new Promise(resolve => {
+      // 当 flushCallbacks 函数开始执行 callbacks 数组中的函数时，如果没有传递 cb 参数，
+      // 则直接调用 _resolve 函数，我们知道这个函数就是返回的 Promise 实例对象的 resolve 函数。
+      // 这样就实现了 Promise 方式的 $nextTick 方法
       _resolve = resolve
     })
   }

@@ -185,7 +185,8 @@ function initComputed (vm: Component, computed: Object) {
   const isSSR = isServerRendering()
 
   for (const key in computed) {
-    const userDef = computed[key]
+    const userDef = computed[key]// userDef定义为计算属性对象的相应的属性值
+    // 计算属性的函数写法实际上是对象写法的简化
     const getter = typeof userDef === 'function' ? userDef : userDef.get
     if (process.env.NODE_ENV !== 'production' && getter == null) {
       warn(
@@ -224,7 +225,7 @@ export function defineComputed (
   key: string,
   userDef: Object | Function
 ) {
-  const shouldCache = !isServerRendering()
+  const shouldCache = !isServerRendering()// 非服务端渲染的情况下计算属性才会缓存值
   if (typeof userDef === 'function') {
     sharedPropertyDefinition.get = shouldCache
       ? createComputedGetter(key)
@@ -238,6 +239,13 @@ export function defineComputed (
       : noop
     sharedPropertyDefinition.set = userDef.set || noop
   }
+  // 最终要得到的是
+  // sharedPropertyDefinition = {
+  //   enumerable: true,
+  //   configurable: true,
+  //   get: createComputedGetter(key),
+  //   set: userDef.set // 或 noop
+  // }
   if (process.env.NODE_ENV !== 'production' &&
       sharedPropertyDefinition.set === noop) {
     sharedPropertyDefinition.set = function () {
@@ -326,6 +334,7 @@ function createWatcher (
     handler = vm[handler]
   }
   return vm.$watch(expOrFn, handler, options)
+  // $watch的实现本质就是创建了一个Watcher实例对象
 }
 
 export function stateMixin (Vue: Class<Component>) {
@@ -370,17 +379,18 @@ export function stateMixin (Vue: Class<Component>) {
       return createWatcher(vm, expOrFn, cb, options)
     }
     options = options || {}
-    options.user = true
+    options.user = true// 代表该观察者实例是用户创建的，然后就到了关键的一步，
+    // 即创建 Watcher 实例对象，多么简单的实现
     const watcher = new Watcher(vm, expOrFn, cb, options)
     if (options.immediate) {
       try {
-        cb.call(vm, watcher.value)
+        cb.call(vm, watcher.value)// immediate 选项用来在属性或函数被侦听后立即执行回调
       } catch (error) {
         handleError(error, vm, `callback for immediate watcher "${watcher.expression}"`)
       }
     }
     return function unwatchFn () {
-      watcher.teardown()
+      watcher.teardown()// 解除观察者与属性之间的关系
     }
   }
 }

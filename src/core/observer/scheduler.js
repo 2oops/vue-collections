@@ -1,4 +1,6 @@
 /* @flow */
+// 调用栈、任务队列、事件循环，javascript 是一种单线程的语言，
+// 它的一切都是建立在以这三个概念为基础之上的
 
 import type Watcher from './watcher'
 import config from '../config'
@@ -19,7 +21,7 @@ const activatedChildren: Array<Component> = []
 let has: { [key: number]: ?true } = {}
 let circular: { [key: number]: number } = {}
 let waiting = false
-let flushing = false
+let flushing = false// flushing 变量的值设置为 true，代表着此时正在执行更新
 let index = 0
 
 /**
@@ -165,7 +167,7 @@ export function queueWatcher (watcher: Watcher) {
   const id = watcher.id
   if (has[id] == null) {
     has[id] = true
-    if (!flushing) {
+    if (!flushing) {// !flushing表示队列没有执行更新时才会简单地将观察者追加到队列的尾部
       queue.push(watcher)
     } else {
       // if already flushing, splice the watcher based on its id
@@ -179,12 +181,21 @@ export function queueWatcher (watcher: Watcher) {
     // queue the flush
     if (!waiting) {
       waiting = true
-
+      // Vue.config.async 这个配置项只会在非生产环境生效
       if (process.env.NODE_ENV !== 'production' && !config.async) {
         flushSchedulerQueue()
         return
       }
-      nextTick(flushSchedulerQueue)
+      nextTick(flushSchedulerQueue)// nextTick的作用相当于setTimeout(fn, 0)
+      // 当调用栈空闲后每次事件循环只会从 (macro)task 中读取一个任务并执行，
+      // 而在同一次事件循环内会将 microtask 队列中所有的任务全部执行完毕，且要先于 (macro)task。
+      // 另外 (macro)task 中两个不同的任务之间可能穿插着UI的重渲染，那么我们只需要在 microtask 中
+      // 把所有在UI重渲染之前需要更新的数据全部更新，这样只需要一次重渲染就能得到最新的DOM了。
+      // 恰好 Vue 是一个数据驱动的框架，如果能在UI重渲染之前更新所有数据状态，
+      // 这对性能的提升是一个很大的帮助，所有要优先选用 microtask 去更新数据状态而不是 (macro)task
+
+      // 因为 setTimeout 会将回调放到 (macro)task 队列中而不是 microtask 队列
+      // 理论上最优的选择是使用 Promise，当浏览器不支持 Promise 时再降级为 setTimeout
     }
   }
 }
